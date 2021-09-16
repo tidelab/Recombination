@@ -77,13 +77,8 @@ public class AddRemoveRecombination extends DivertLociOperator {
             return Double.NEGATIVE_INFINITY;        
 
         // HR contribution for reverse move
-        int nRemovableEdges = (int) network.getEdges().stream()
-                .filter(e -> !e.isRootEdge())
-                .filter(e -> !e.breakPoints.isEmpty())
-                .filter(e -> e.childNode.isRecombination())
-                .filter(e -> e.parentNode.isCoalescence())
-                .count();
-        
+        int nRemovableEdges = getRemovableEdges().size();
+     
         logHR += Math.log(1.0/nRemovableEdges);
 
         return logHR;
@@ -161,12 +156,7 @@ public class AddRemoveRecombination extends DivertLociOperator {
     double removeRecombination() {
         double logHR = 0.0;
         
-        List<RecombinationNetworkEdge> removableEdges = network.getEdges().stream()
-                .filter(e -> !e.isRootEdge())
-                .filter(e -> !e.breakPoints.isEmpty())
-                .filter(e -> e.childNode.isRecombination())
-                .filter(e -> e.parentNode.isCoalescence())
-                .collect(Collectors.toList());
+        List<RecombinationNetworkEdge> removableEdges = getRemovableEdges();
         
         
         if (removableEdges.isEmpty())
@@ -316,5 +306,13 @@ public class AddRemoveRecombination extends DivertLociOperator {
 //        }
 //    }
 
+    public List<RecombinationNetworkEdge> getRemovableEdges() {
+    	return(network.getEdges().stream()
+            .filter(e -> !e.isRootEdge())
+            .filter(e -> !e.breakPoints.isEmpty())
+            .filter(e -> e.childNode.isRecombination())
+            .filter(e -> e.parentNode.isCoalescence())
+            .collect(Collectors.toList()));
+    }
     
 }
