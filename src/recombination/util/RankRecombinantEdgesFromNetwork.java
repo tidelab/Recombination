@@ -136,19 +136,21 @@ public class RankRecombinantEdgesFromNetwork {
         	System.out.println("found " + recombinantNodes.size() + " recombinant nodes");
         	System.out.println(f.removeOperator.getRemovableEdges().size()+" edges can be removed");
         	List<Double> lhGains = new ArrayList<Double>();
+        	List<Integer> nodeIDs = new ArrayList<Integer>();
         	for (RecombinationNetworkNode n : recombinantNodes) {
         		lhGains.add(f.getMinimumLikelihoodGain(n));
+        		nodeIDs.add(n.ID);
         	}
         	recombinantNodes = network.getNodes().stream()
                     .filter(e -> e.isRecombination())
                     .collect(Collectors.toList());
-        	int index = 0;
-        	for (RecombinationNetworkNode n : recombinantNodes) {
 
+        	for (RecombinationNetworkNode n : recombinantNodes) {
+        		final int index = nodeIDs.indexOf(n.ID);
         		if(n.getMetaData()!=null) {
-        			n.setMetaData(n.getMetaData()+",minimumLikelihoodGain="+lhGains.get(index++));
+        			n.setMetaData(n.getMetaData()+",minimumLikelihoodGain="+lhGains.get(index));
         		} else {
-        			n.setMetaData(",minimumLikelihoodGain="+lhGains.get(index++));
+        			n.setMetaData(",minimumLikelihoodGain="+lhGains.get(index));
         		}
       		}
         	System.out.println("Annotated Tree: "+network.toString());
