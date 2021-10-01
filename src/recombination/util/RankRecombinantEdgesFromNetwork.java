@@ -26,11 +26,15 @@ public class RankRecombinantEdgesFromNetwork {
 	private RecombinationNetwork network;
 	private NetworkLikelihood likelihood;
 	private AddRemoveRecombination removeOperator;
+	private double logP_full;
 	
-	public RankRecombinantEdgesFromNetwork(RecombinationNetwork network, NetworkLikelihood likelihood, AddRemoveRecombination removeOperator) {
+	public RankRecombinantEdgesFromNetwork(RecombinationNetwork network, NetworkLikelihood likelihood) {
 		this.network = network;
 		this.likelihood = likelihood;
-		this.removeOperator = removeOperator;
+        this.removeOperator = new AddRemoveRecombination();
+    	this.removeOperator.initByName("alpha", 1.0, "network", network, "weight", 1.0);
+    	
+    	logP_full = likelihood.calculateLogP();
 	}
 	
 	private static class Options {
@@ -70,7 +74,6 @@ public class RankRecombinantEdgesFromNetwork {
     
    
     public double getLikelihoodGain(RecombinationNetworkEdge recombinantEdge) {
-    	final double logP_full = likelihood.calculateLogP();
     	removeOperator.removeRecombinationEdge(recombinantEdge);
     	double logP = likelihood.calculateLogP();
     	network.restore();
@@ -79,23 +82,20 @@ public class RankRecombinantEdgesFromNetwork {
     
     public double getMinimumLikelihoodGain(RecombinationNetworkNode recombinantNode) {
     	final int nodeID = recombinantNode.ID;
-    	List<RecombinationNetworkEdge> edges = recombinantNode.getParentEdges();
-    	if(edges.size()!=2) {
-    		System.out.println("Warning: Node " + recombinantNode.toString() + " is not a recombinant node. Return 0.0");
-    		return(0);
-    	}
+    	RecombinationNetworkNode node = network.getNodes().stream().filter(e -> e.ID == nodeID).findFirst().get();
+    	RecombinationNetworkEdge edge = node.getParentEdges().get(0);
     	List<RecombinationNetworkEdge> removableEdges = removeOperator.getRemovableEdges();
     	double likelihoodGainLeft = Double.POSITIVE_INFINITY;
-    	if (removableEdges.contains(edges.get(0))) {
-    		likelihoodGainLeft = getLikelihoodGain(edges.get(0));
+    	if (removableEdges.contains(edge)) {
+    		likelihoodGainLeft = getLikelihoodGain(edge);
     	}
-    	RecombinationNetworkNode node = network.getNodes().stream().filter(e -> e.ID == nodeID).findFirst().get();
-    	RecombinationNetworkEdge sisterEdge = node.getParentEdges().get(1);
+        removableEdges = removeOperator.getRemovableEdges();
+        node = network.getNodes().stream().filter(e -> e.ID == nodeID).findFirst().get();
+        edge = node.getParentEdges().get(1);
     	double likelihoodGainRight = Double.POSITIVE_INFINITY;
-    	if (removableEdges.contains(sisterEdge)) {
-    		likelihoodGainRight = getLikelihoodGain(sisterEdge);
+    	if (removableEdges.contains(edge)) {
+    		likelihoodGainRight = getLikelihoodGain(edge);
     	}
-    	
     	return(Math.min(likelihoodGainLeft, likelihoodGainRight));
     }
     
@@ -119,19 +119,13 @@ public class RankRecombinantEdgesFromNetwork {
         HKY.initByName("kappa", "4.0", "frequencies", freqs);
 
         SiteModel siteModel = new SiteModel();
-        siteModel.initByName("mutationRate", "5e-6", "gammaCategoryCount", 1, "substModel", HKY);
+        siteModel.initByName("mutationRate", "1", "gammaCategoryCount", 1, "substModel", HKY);
 
         NetworkLikelihood likelihood = new NetworkLikelihood();
         likelihood.initByName("data", alignment, "recombinationNetwork", network, "siteModel", siteModel);
         
-        AddRemoveRecombination removeOperator = new AddRemoveRecombination();
-    	removeOperator.initByName("alpha", 1.0, "network", network, "weight", 1.0);
-    	
-
-    	
-    	
     	try (PrintStream ps = new PrintStream(options.outputFile)) {
-        	RankRecombinantEdgesFromNetwork f = new RankRecombinantEdgesFromNetwork(network, likelihood, removeOperator);
+        	RankRecombinantEdgesFromNetwork f = new RankRecombinantEdgesFromNetwork(network, likelihood);
         	
         	System.out.println( "-----------------------------------------");
 
@@ -139,20 +133,24 @@ public class RankRecombinantEdgesFromNetwork {
         	List<RecombinationNetworkNode> recombinantNodes = network.getNodes().stream()
                     .filter(e -> e.isRecombination())
                     .collect(Collectors.toList());
-        	System.out.println ("found " + recombinantNodes.size() + " recombinant nodes");
+        	System.out.println("found " + recombinantNodes.size() + " recombinant nodes");
+        	System.out.println(f.removeOperator.getRemovableEdges().size()+" edges can be removed");
         	List<Double> lhGains = new ArrayList<Double>();
+        	List<Integer> nodeIDs = new ArrayList<Integer>();
         	for (RecombinationNetworkNode n : recombinantNodes) {
         		lhGains.add(f.getMinimumLikelihoodGain(n));
+        		nodeIDs.add(n.ID);
         	}
         	recombinantNodes = network.getNodes().stream()
                     .filter(e -> e.isRecombination())
                     .collect(Collectors.toList());
+
         	for (RecombinationNetworkNode n : recombinantNodes) {
-        		int index=0;
+        		final int index = nodeIDs.indexOf(n.ID);
         		if(n.getMetaData()!=null) {
-        			n.setMetaData(n.getMetaData()+",minimumLikelihoodGain="+lhGains.get(index++));
+        			n.setMetaData(n.getMetaData()+",minimumLikelihoodGain="+lhGains.get(index));
         		} else {
-        			n.setMetaData(",minimumLikelihoodGain="+lhGains.get(index++));
+        			n.setMetaData(",minimumLikelihoodGain="+lhGains.get(index));
         		}
       		}
         	System.out.println("Annotated Tree: "+network.toString());
