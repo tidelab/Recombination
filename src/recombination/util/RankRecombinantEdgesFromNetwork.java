@@ -96,7 +96,12 @@ public class RankRecombinantEdgesFromNetwork {
     	if (removableEdges.contains(edge)) {
     		likelihoodGainRight = getLikelihoodGain(edge);
     	}
-    	return(Math.min(likelihoodGainLeft, likelihoodGainRight));
+    	double min = Math.min(likelihoodGainLeft, likelihoodGainRight);
+    	if (min==Double.POSITIVE_INFINITY) {
+    		return(0);
+    	} else {
+    		return(Math.min(likelihoodGainLeft, likelihoodGainRight));
+    	}
     }
     
     
