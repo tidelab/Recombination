@@ -350,8 +350,16 @@ public class RecombinationNetwork extends StateNode {
     }
 
     @Override
-    public StateNode copy() {
-        return new RecombinationNetwork(rootEdge.getCopy());
+    public RecombinationNetwork copy() {
+    	RecombinationNetwork n = new RecombinationNetwork(rootEdge.getCopy());
+    	n.setID(getID());
+    	n.index = index;
+    	n.totalLength = totalLength;
+    	n.resume = resume;
+    	n.nodeEdgeIDs = nodeEdgeIDs.copy();
+    	n.wasGibbs = wasGibbs;
+    	
+    	return(n);
     }
 
     @Override

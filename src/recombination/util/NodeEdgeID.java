@@ -60,7 +60,14 @@ public class NodeEdgeID {
 		}
 	}
 
-
+	public NodeEdgeID copy() {
+		NodeEdgeID c = new NodeEdgeID();
+		c.edgeids = new ArrayList<>(edgeids);
+		c.nodeids = new ArrayList<>(nodeids);
+		c.storedEdgeids = new ArrayList<>(storedEdgeids);
+		c.storedNodeids = new ArrayList<>(storedNodeids);
+		return(c);
+	}
 	
 
 }
