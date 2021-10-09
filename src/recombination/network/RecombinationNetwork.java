@@ -1,5 +1,6 @@
 package recombination.network;
 
+import beast.core.Input;
 import beast.core.StateNode;
 import beast.evolution.alignment.TaxonSet;
 import beast.evolution.tree.Node;
@@ -23,6 +24,11 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class RecombinationNetwork extends StateNode {
+	
+	public Input<String> extendedNewickInput = new Input<>(
+	        "extendedNewick",
+            "initialize network with an extended Newick string as it is produced by the recombination package",
+            Input.Validate.OPTIONAL);
 
     protected RecombinationNetworkEdge rootEdge;
 
@@ -58,7 +64,11 @@ public class RecombinationNetwork extends StateNode {
     
 
     @Override
-    public void initAndValidate() { }
+    public void initAndValidate() { 
+    	if(extendedNewickInput.get()!=null) {
+    		fromExtendedNewick(extendedNewickInput.get());
+    	}
+    }
 
     /**
      * @return the root edge of the network
